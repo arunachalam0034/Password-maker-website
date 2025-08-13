@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Password Strength Checker & Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="ind.js"></script>
+
+</head>
+<body>
+    <script src="ind.js"></script>
+
+  <div class="container">
+    <section class="card">
+      <h1>Password Strength Checker</h1>
+      <p class="lead">Live strength meter, feedback and suggestions. Built with violet & purple accent on a dark theme.</p>
+
+      <label for="pw">Enter password</label>
+      <input id="pw" type="password" placeholder="Type or paste a password..." autocomplete="off">
+
+      <div class="meter-wrap">
+        <div class="meter" aria-hidden><span id="meterFill"></span></div>
+        <div class="meta">
+          <div class="small">Strength: <span id="strengthText">—</span></div>
+          <div class="score" id="scoreText">0 / 100</div>
+        </div>
+      </div>
+
+      <div class="options">
+        <label class="option"><input id="show" type="checkbox"> <span class="small">Show password</span></label>
+        <label class="option"><input id="avoidCommon" type="checkbox" checked> <span class="small">Check against common words</span></label>
+      </div>
+
+      <div class="suggestions" id="suggestions">Start typing to see suggestions</div>
+    </section>
+
+    <aside class="card preview">
+      <div>
+        <h1>Password Generator</h1>
+        <p class="lead">Generate secure passwords using options below</p>
+      </div>
+
+      <div class="password-box">
+        <div class="pw" id="generated">—</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" id="copyBtn" title="Copy">Copy</button>
+          <button class="btn glow" id="regen">Generate</button>
+        </div>
+      </div>
+
+      <label for="length">Length: <span id="lenVal">16</span></label>
+      <input id="length" class="range" type="range" min="6" max="64" value="16">
+
+      <div class="options" style="margin-top:8px">
+        <label class="option"><input id="inclLower" type="checkbox" checked> <span class="small">Lowercase (a-z)</span></label>
+        <label class="option"><input id="inclUpper" type="checkbox" checked> <span class="small">Uppercase (A-Z)</span></label>
+        <label class="option"><input id="inclNum" type="checkbox" checked> <span class="small">Numbers (0-9)</span></label>
+        <label class="option"><input id="inclSym" type="checkbox" checked> <span class="small">Symbols (!@#$...)</span></label>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn glow" id="generateNow">Generate Password</button>
+        <button class="btn ghost" id="usePw">Use in input</button>
+      </div>
+
+      <p class="hint">Tip: Aim for length ≥12 with mixed character types for practical strength.</p>
+    </aside>
+  </div>
+
+  <script src="./ind.js"></script>
+</body>
+</html>
