@@ -4,13 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Password Strength Checker & Generator</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="ind.js"></script>
-
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <script src="ind.js"></script>
-
   <div class="container">
     <section class="card">
       <h1>Password Strength Checker</h1>
@@ -68,6 +64,181 @@
     </aside>
   </div>
 
-  <script src="./ind.js"></script>
+  <script>
+    // --- Utilities ---
+    const pw = document.getElementById('pw');
+    const meter = document.getElementById('meterFill');
+    const strengthText = document.getElementById('strengthText');
+    const scoreText = document.getElementById('scoreText');
+    const suggestions = document.getElementById('suggestions');
+
+    const generated = document.getElementById('generated');
+    const lengthRange = document.getElementById('length');
+    const lenVal = document.getElementById('lenVal');
+
+    const commonWords = ['password','123456','123456789','qwerty','abc123','letmein','iloveyou','admin','welcome','login','passw0rd'];
+
+    const LOWER = 'abcdefghijklmnopqrstuvwxyz';
+    const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const DIGITS = '0123456789';
+    const SYMS  = '!@#$%^&*()-_=+[]{};:,.<>/?|~';
+
+    function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+    function estimateStrength(s){
+      if(!s) return {score:0, feedback:['Type a password'], warnings:[]};
+      let score=0;
+
+      const len = s.length;
+      score += clamp((len/32)*40, 0, 40);
+
+      let types = 0;
+      if(/[a-z]/.test(s)) types++;
+      if(/[A-Z]/.test(s)) types++;
+      if(/[0-9]/.test(s)) types++;
+      if(/[^A-Za-z0-9]/.test(s)) types++;
+      score += (types/4)*30;
+
+      const unique = new Set(s).size;
+      score += clamp((unique/Math.max(1,len))*15, 0, 15);
+
+      if(/(.)\1{2,}/.test(s)) score -= 10;
+      if(/(?:012|123|234|345|456|567|678|789)/.test(s.toLowerCase())) score -= 8;
+      if(/(?:abc|bcd|cde|def|efg|fgh|ghi|hij)/.test(s.toLowerCase())) score -= 8;
+
+      const lw = s.toLowerCase();
+      for(const w of commonWords){
+        if(lw.includes(w)) score -= 18;
+      }
+
+      if(/^[0-9]{1,6}$/.test(s)) score -= 12;
+
+      score = Math.round(clamp(score, 0, 100));
+
+      const fb = [];
+      if(len < 8) fb.push('Make it longer (≥ 12 recommended).');
+      if(!/[a-z]/.test(s)) fb.push('Add lowercase letters.');
+      if(!/[A-Z]/.test(s)) fb.push('Add uppercase letters.');
+      if(!/[0-9]/.test(s)) fb.push('Include digits.');
+      if(!/[^A-Za-z0-9]/.test(s)) fb.push('Include symbols, e.g. !@#$%.');
+      if(/(.)\1{2,}/.test(s)) fb.push('Avoid repeated characters or sequences.');
+      if(commonWords.some(w=>lw.includes(w))) fb.push('Avoid common words or easily guessed sequences.');
+
+      if(fb.length===0) fb.push('Looks good — still prefer longer passphrase where possible.');
+
+      return {score, feedback:fb};
+    }
+
+    function updateStrengthUI(password){
+      const {score, feedback} = estimateStrength(password);
+      scoreText.textContent = score + ' / 100';
+      let color = 'linear-gradient(90deg, var(--bad), var(--warn))';
+      let text = 'Very weak';
+      if(score >= 80){ color = 'linear-gradient(90deg, #00c853, var(--good))'; text = 'Very strong'; }
+      else if(score >= 60){ color = 'linear-gradient(90deg, #7ee787, #22c55e)'; text = 'Strong'; }
+      else if(score >= 40){ color = 'linear-gradient(90deg, var(--warn), var(--accent-1))'; text = 'Moderate'; }
+      else if(score > 0){ color = 'linear-gradient(90deg, var(--bad), var(--warn))'; text = 'Weak'; }
+      else { color = 'linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02))'; text = '—'; }
+
+      strengthText.textContent = text;
+      meter.style.width = score + '%';
+      meter.style.background = color;
+      meter.style.boxShadow = score >= 60 ? '0 8px 26px rgba(124,58,237,0.12)' : 'none';
+
+      suggestions.innerHTML = '<strong>Suggestions:</strong><br>' + feedback.map(f=>'<div style="margin-top:6px">• '+f+'</div>').join('');
+    }
+
+    const copyBtn = document.getElementById('copyBtn');
+    const regen = document.getElementById('regen');
+    const generateNow = document.getElementById('generateNow');
+    const usePw = document.getElementById('usePw');
+
+    function generatePassword(opts){
+      const {len, lower, upper, digits, syms} = opts;
+      let pool = '';
+      if(lower) pool += LOWER;
+      if(upper) pool += UPPER;
+      if(digits) pool += DIGITS;
+      if(syms) pool += SYMS;
+      if(!pool) return '';
+
+      const required = [];
+      if(lower) required.push(randomFrom(LOWER));
+      if(upper) required.push(randomFrom(UPPER));
+      if(digits) required.push(randomFrom(DIGITS));
+      if(syms) required.push(randomFrom(SYMS));
+
+      const rest = Array.from({length: Math.max(0, len - required.length)}, () => randomFrom(pool));
+      return shuffleArray(required.concat(rest)).join('');
+    }
+
+    function randomFrom(s){ return s[Math.floor(Math.random()*s.length)]; }
+    function shuffleArray(a){
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function readOptions(){
+      return {
+        len: Number(lengthRange.value),
+        lower: document.getElementById('inclLower').checked,
+        upper: document.getElementById('inclUpper').checked,
+        digits: document.getElementById('inclNum').checked,
+        syms: document.getElementById('inclSym').checked
+      };
+    }
+
+    function regenAndShow(){
+      const opts = readOptions();
+      const pwGen = generatePassword(opts);
+      generated.textContent = pwGen || 'Select at least one character set';
+    }
+
+    lengthRange.addEventListener('input', () => { lenVal.textContent = lengthRange.value; });
+    regen.addEventListener('click', regenAndShow);
+    generateNow.addEventListener('click', regenAndShow);
+
+    copyBtn.addEventListener('click', async ()=>{
+      const text = generated.textContent;
+      if(!text || text === '—' || text.includes('Select')) return;
+      try{
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'Copied';
+        setTimeout(()=>copyBtn.textContent='Copy',1200);
+      }catch(e){
+        copyBtn.textContent = 'Copy (Ctrl+C)';
+        setTimeout(()=>copyBtn.textContent='Copy',1400);
+      }
+    });
+
+    usePw.addEventListener('click', ()=>{
+      const text = generated.textContent;
+      if(!text || text.includes('Select')) return;
+      pw.value = text;
+      updateStrengthUI(text);
+    });
+
+    document.getElementById('show').addEventListener('change', (e)=>{
+      pw.type = e.target.checked ? 'text' : 'password';
+    });
+
+    document.getElementById('avoidCommon').addEventListener('change', ()=>{
+      updateStrengthUI(pw.value);
+    });
+
+    pw.addEventListener('input', (e)=>{
+      updateStrengthUI(e.target.value);
+    });
+
+    (function init(){
+      regenAndShow();
+      updateStrengthUI('');
+    })();
+
+    window.estimateStrength = estimateStrength;
+  </script>
 </body>
 </html>
